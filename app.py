@@ -1,21 +1,26 @@
-import streamlit as st
-from langchain_community.llms import Ollama
+from dotenv import load_dotenv
+import seaborn as sns
+import streamlit as st 
+from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
+from langchain_groq import ChatGroq
 
-# Error handling (assuming Ollama might raise exceptions during initialization)
-try:
-  llm = Ollama(model="llama3")
-except Exception as e:
-  st.error(f"Error initializing Ollama: {e}")
-  raise  # Re-raise to stop Streamlit app from continuing
+load_dotenv()
 
-st.title("Chatbot using Llama3")
+st.title("Llama-3-70b")
+df = sns.load_dataset("titanic")
+st.write(df.head(3))
 
-prompt = st.text_area("Enter your prompt:")
+agent = create_pandas_dataframe_agent(
+    ChatGroq(model_name="llama3-70b-8192", temperature=0),
+    df,
+    verbose=True
+)
+
+prompt = st.text_input("Enter your prompt:")
 
 if st.button("Generate"):
-  if prompt:
-    with st.spinner("Generating response..."):
-      try:
-        st.write_stream(llm.stream(prompt, stop=['<|eot_id|>']))
-      except Exception as e:
-        st.error(f"Error generating response: {e}")
+    if prompt:
+        with st.spinner("Generating response..."):
+            response = agent.invoke(prompt)
+            st.write(response["output"])
+
